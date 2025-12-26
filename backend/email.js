@@ -1,0 +1,95 @@
+import nodemailer from 'nodemailer';
+
+const smtpUser = process.env.GMAIL_USER;
+const smtpPass = process.env.GMAIL_APP_PASSWORD;
+
+if (!smtpUser || !smtpPass) {
+  console.warn('[email] Missing Gmail SMTP credentials. Emails will fail until configured.');
+}
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: smtpUser,
+    pass: smtpPass,
+  },
+});
+
+export async function sendConfirmationEmail(to, payload) {
+  const { referenceId, category, city, pincode, street, coordinates } = payload;
+  const mailOptions = {
+    from: `Citizen Issue Reporting <${smtpUser}>`,
+    to,
+    subject: 'Your issue has been successfully recorded',
+    text: buildPlainText({ referenceId, category, city, pincode, street, coordinates }),
+    html: buildHtml({ referenceId, category, city, pincode, street, coordinates }),
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+function buildPlainText({ referenceId, category, city, pincode, street, coordinates }) {
+  let locationText = `${city || 'City N/A'}, ${pincode || 'Pincode N/A'}`;
+  if (street) {
+    locationText += `, ${street}`;
+  }
+  if (coordinates?.lat && coordinates?.lng) {
+    locationText += ` (Coordinates: ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)})`;
+  }
+  
+  return [
+    'Hello,',
+    '',
+    'Thank you for reporting the issue.',
+    '',
+    'Your complaint has been successfully registered.',
+    '',
+    `Reference ID: ${referenceId}`,
+    `Issue Type: ${category}`,
+    `Location: ${locationText}`,
+    '',
+    'Our team has forwarded this issue to the concerned government department.',
+    'Please keep the reference ID for future communication.',
+    '',
+    'Regards,',
+    'Citizen Issue Reporting Team',
+  ].join('\n');
+}
+
+function buildHtml({ referenceId, category, city, pincode, street, coordinates }) {
+  let locationHtml = `${city || 'City N/A'}, ${pincode || 'Pincode N/A'}`;
+  if (street) {
+    locationHtml += `, ${street}`;
+  }
+  let mapsLink = '';
+  let mapEmbed = '';
+  
+  if (coordinates?.lat && coordinates?.lng) {
+    const lat = coordinates.lat.toFixed(4);
+    const lng = coordinates.lng.toFixed(4);
+    mapsLink = `<br/><a href="https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}" target="_blank" style="color: #2563eb; text-decoration: none;">View on Google Maps →</a>`;
+    mapEmbed = `
+    <div style="margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <a href="https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}" target="_blank">
+        <img src="https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=15&size=400x300&markers=${coordinates.lat},${coordinates.lng}" alt="Issue Location Map" style="width: 100%; height: auto; display: block;" />
+      </a>
+      <p style="margin: 10px; font-size: 12px; color: #666;">Coordinates: ${lat}, ${lng}</p>
+    </div>`;
+  }
+  
+  return `
+  <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a; max-width: 600px;">
+    <p>Hello,</p>
+    <p>Thank you for reporting the issue.</p>
+    <p>Your complaint has been successfully registered.</p>
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+      <p style="margin: 8px 0;"><strong>Reference ID:</strong> ${referenceId}</p>
+      <p style="margin: 8px 0;"><strong>Issue Type:</strong> ${category}</p>
+      <p style="margin: 8px 0;"><strong>Location:</strong> ${locationHtml}${mapsLink}</p>
+    </div>
+    ${mapEmbed}
+    <p style="margin-top: 20px;">Our team has forwarded this issue to the concerned government department.<br/>
+       Please keep the reference ID for future communication.</p>
+    <p style="margin-top: 15px; color: #666; font-size: 12px;">Regards,<br/>Citizen Issue Reporting Team</p>
+  </div>`;
+}

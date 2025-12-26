@@ -1,0 +1,201 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    DEPLOYMENT ARCHITECTURE DIAGRAM                          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+                              END USERS
+                                 |
+                 __________________|__________________
+                |                                    |
+                v                                    v
+        ┌──────────────────┐             ┌──────────────────┐
+        │  VERCEL FRONTEND │             │ RAILWAY BACKEND  │
+        │ ┌──────────────┐ │             │ ┌──────────────┐ │
+        │ │ index.html   │ │             │ │ server.js    │ │
+        │ │ script.js    │ │─────────────→│ │ routes/      │ │
+        │ │ styles.css   │ │   API Calls  │ │ firebase.js  │ │
+        │ │ Leaflet Map  │ │             │ │ email.js     │ │
+        │ │ Google OAuth │ │             │ └──────────────┘ │
+        │ └──────────────┘ │             └────────┬─────────┘
+        │ https://your-    │                      │
+        │ vercel.app       │                      ├────────────────────┐
+        └──────────────────┘                      |                    |
+                 |                                |                    |
+                 |                        ┌───────v────────┐   ┌──────v──────┐
+                 |                        │ FIREBASE DB    │   │ GMAIL SMTP  │
+                 |                        │ (Firestore)    │   │ (Email)     │
+                 |                        │ - Issues       │   │ - Confirm.  │
+                 |                        │ - Reports      │   │ - Updates   │
+                 |                        └────────────────┘   └─────────────┘
+                 |                        
+                 └────────────────────────────────────────────────────────────┐
+                                                                              │
+┌─────────────────────────────────────────────────────────────────────────────┘
+│                                  GitHub
+│                              (Source Code)
+│                     (Single push deploys both)
+└──────────────────────────────────────────────────────────────────────────────
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          DATA FLOW DIAGRAM                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+USER FLOW:
+┌─────────┐
+│ 1. Sign │→ Google OAuth → Firebase Auth
+│  In     │
+└─────────┘
+    ↓
+┌─────────────────────────┐
+│ 2. Select Location      │
+│    on Map              │
+└─────────────────────────┘
+    ↓
+    ├→ Get Coordinates
+    │
+    └→ Call /api/geocode/reverse
+       ↓
+       Nominatim API (OpenStreetMap)
+       ↓
+    Auto-fill: City, Pincode, Street
+    ↓
+┌─────────────────────────┐
+│ 3. Fill Form            │
+│    Category             │
+│    Description          │
+│    Image                │
+└─────────────────────────┘
+    ↓
+┌─────────────────────────┐
+│ 4. Submit               │
+└─────────────────────────┘
+    ↓
+    Call /api/report/submit
+    ↓
+    ├→ Save to Firestore
+    │
+    └→ Send Email via Gmail SMTP
+    ↓
+┌─────────────────────────┐
+│ 5. Confirmation Page    │
+│    Reference ID         │
+│    Email Sent           │
+└─────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        DEPLOYMENT SEQUENCE                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Local Development
+      │
+      ├─→ git init
+      ├─→ git add .
+      ├─→ git commit
+      └─→ git push → GitHub
+               │
+               ├─────────────────────────────┬────────────────────────┐
+               │                             │                        │
+               v                             v                        v
+         Railway                         Vercel                   (You Monitor)
+         Backend                         Frontend                   
+         ───────                         ────────                   
+         1. Detect push                  1. Detect push             
+         2. Build                        2. Build                   
+         3. Deploy                       3. Deploy                  
+         4. Set Env Vars                 4. Ready!                  
+         5. Start Server                                            
+         6. Test Health                                             
+         ↓                               ↓                          
+    https://your-                   https://your-                 
+    project.up.                     project.                       
+    railway.app                     vercel.app                     
+    LIVE                             LIVE                          
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                           ENVIRONMENT SETUP                                 ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+LOCAL (.env - NOT COMMITTED)
+├─ GOOGLE_CLIENT_ID
+├─ FIREBASE_PROJECT_ID
+├─ FIREBASE_CLIENT_EMAIL
+├─ FIREBASE_PRIVATE_KEY
+├─ GMAIL_USER
+└─ GMAIL_APP_PASSWORD
+
+RAILWAY (Set in Dashboard)
+├─ GOOGLE_CLIENT_ID
+├─ FIREBASE_PROJECT_ID
+├─ FIREBASE_CLIENT_EMAIL
+├─ FIREBASE_PRIVATE_KEY
+├─ GMAIL_USER
+└─ GMAIL_APP_PASSWORD
+
+VERCEL (No env vars needed!)
+└─ Auto uses window.location.origin
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                           API ENDPOINTS                                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+BASE URL: https://your-railway-project.up.railway.app
+
+POST   /api/auth/verify         - Verify Google token
+POST   /api/report/submit       - Submit civic issue
+POST   /api/geocode/reverse     - Get address from coordinates
+POST   /api/geocode/search-pincode - Get address from pincode
+GET    /health                  - Server health check
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        MONITORING & LOGS                                    ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Railway Logs:
+  Dashboard → Project → Deployments → View Logs
+  Shows: Server logs, errors, API calls
+
+Vercel Logs:
+  Dashboard → Project → Deployments → Select deployment
+  Shows: Build logs, function logs, errors
+
+Browser Console:
+  F12 in browser
+  Shows: Frontend errors, API calls, logs
+
+Firestore:
+  Firebase Console → Database
+  Shows: Stored issues, user data
+
+Gmail:
+  gmail.com → Check emails sent
+  Shows: Confirmation emails
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                          STATUS INDICATORS                                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+✅ LOCAL (localhost:3000)
+   npm run dev → Server running
+
+✅ RAILWAY
+   - Green "Running" status
+   - GET /health returns {"status":"ok"}
+
+✅ VERCEL
+   - "Ready in production" status
+   - Page loads without 404s
+
+✅ API CALLS WORKING
+   - Browser console shows successful calls
+   - Firestore shows new documents
+
+✅ EMAIL WORKING
+   - Check email inbox for confirmation
+   - Gmail shows "Sent" folder
+
+✅ GOOGLE OAUTH
+   - Sign-in button works
+   - Redirects to form
+
+═══════════════════════════════════════════════════════════════════════════════
+                   YOU'RE READY TO GO LIVE! 🚀
+═══════════════════════════════════════════════════════════════════════════════

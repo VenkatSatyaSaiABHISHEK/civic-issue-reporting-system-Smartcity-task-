@@ -1,0 +1,23 @@
+{
+  "buildCommand": "echo 'Frontend is static, no build needed'",
+  "outputDirectory": "frontend",
+  "routes": [
+    {
+      "src": "^/api/(.*)",
+      "methods": ["GET", "POST", "PUT", "DELETE"],
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/index.html"
+    }
+  ],
+  "env": {
+    "GOOGLE_CLIENT_ID": "@google_client_id",
+    "FIREBASE_PROJECT_ID": "@firebase_project_id",
+    "FIREBASE_CLIENT_EMAIL": "@firebase_client_email",
+    "FIREBASE_PRIVATE_KEY": "@firebase_private_key",
+    "GMAIL_USER": "@gmail_user",
+    "GMAIL_APP_PASSWORD": "@gmail_app_password"
+  }
+}
