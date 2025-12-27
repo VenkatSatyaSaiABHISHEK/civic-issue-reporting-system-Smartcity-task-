@@ -59,7 +59,7 @@ router.post('/search-pincode', async (req, res) => {
     const result = data[0];
     const address = result.address || {};
     
-    console.log('[pincode-search] Result for', pincode, ':', JSON.stringify(address, null, 2));
+    console.log('[pincode-search] Full address object:', JSON.stringify(address, null, 2));
     
     // Extract city and area/locality information (better for Indian context)
     const city = address.city || address.county || address.village || address.town || 'Unknown';
@@ -70,15 +70,19 @@ router.post('/search-pincode', async (req, res) => {
       address.hamlet,
       address.village,
       address.road,
+      address.state_district,
     ].filter(Boolean);
     
-    // Remove duplicates
+    // Remove duplicates and sort
     const uniqueAreas = [...new Set(areas)];
+    
+    console.log('[pincode-search] Extracted areas:', uniqueAreas);
+    console.log('[pincode-search] City:', city);
 
     res.json({
       city,
       pincode,
-      areas: uniqueAreas,
+      areas: uniqueAreas.length > 0 ? uniqueAreas : [city], // Return city as fallback
       lat: result.lat,
       lon: result.lon,
       full_address: result.display_name,

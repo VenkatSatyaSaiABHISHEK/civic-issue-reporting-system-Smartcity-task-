@@ -683,7 +683,23 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
     // Auto-fill area options
     if (data.areas && data.areas.length > 0) {
       streetOptions = data.areas;
-      console.log('[pincode] Area options:', streetOptions);
+      console.log('[pincode] Area options available:', data.areas);
+      
+      // Populate dropdown
+      const options = data.areas
+        .map(area => `<li data-value="${area}">${area}</li>`)
+        .join('');
+      if (streetDropdown && options) {
+        streetDropdown.innerHTML = options;
+        streetDropdown.style.display = 'block';
+        console.log('[pincode] Dropdown populated with', data.areas.length, 'options');
+      }
+    } else {
+      console.warn('[pincode] No areas returned from API:', data.areas);
+      if (streetDropdown) {
+        streetDropdown.innerHTML = '<li style="color: #999;">No areas found for this location</li>';
+        streetDropdown.style.display = 'block';
+      }
     }
 
     // Update map if it exists
