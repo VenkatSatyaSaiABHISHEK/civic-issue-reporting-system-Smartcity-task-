@@ -212,7 +212,7 @@ function onMapClick(e) {
   mapHint.textContent = `📍 Location selected`;
   
   reverseGeocode(lat, lng);
-  submitBtn.disabled = !canSubmit();
+  submitBtn.disabled = false;
 }
 
 // IMAGE UPLOAD
@@ -381,7 +381,7 @@ async function handleGoogleCredential(response) {
     state.signedIn = true;
     emailInput.value = state.email;
     emailInput.setAttribute('readonly', true);
-    submitBtn.disabled = !canSubmit();
+    submitBtn.disabled = false;
     showToast(`Signed in as ${state.email}`);
     showStep(2); // Move to Step 2 after successful login
   } catch (err) {
@@ -401,7 +401,7 @@ function renderCategories() {
       state.category = c.label;
       Array.from(categoryGrid.children).forEach((el) => el.classList.remove('active'));
       card.classList.add('active');
-      submitBtn.disabled = !canSubmit();
+      submitBtn.disabled = false;
     });
     categoryGrid.appendChild(card);
   });
@@ -421,14 +421,45 @@ function canSubmit() {
 function wireValidation() {
   [descriptionInput, cityInput, pincodeInput].forEach((field) => {
     field.addEventListener('input', () => {
-      submitBtn.disabled = !canSubmit();
+      // Button is always enabled, but we'll show errors on submit
+      submitBtn.disabled = false;
     });
   });
 }
 
 async function handleSubmit(evt) {
   evt.preventDefault();
-  if (!canSubmit()) return;
+  
+  // Validate all required fields
+  if (!state.signedIn) {
+    showToast('❌ Please sign in first');
+    return;
+  }
+  
+  if (!state.category) {
+    showToast('❌ Please select an issue category');
+    return;
+  }
+  
+  if (!emailInput.value.trim()) {
+    showToast('❌ Email is required');
+    return;
+  }
+  
+  if (!cityInput.value.trim()) {
+    showToast('❌ Please enter a city');
+    return;
+  }
+  
+  if (!pincodeInput.value.trim()) {
+    showToast('❌ Please enter a pincode');
+    return;
+  }
+  
+  if (descriptionInput.value.trim().length < 10) {
+    showToast('❌ Description must be at least 10 characters');
+    return;
+  }
 
   setLoading(true);
   try {
@@ -471,7 +502,7 @@ function setLoading(isLoading) {
     submitBtn.disabled = true;
   } else {
     submitBtn.classList.remove('loading');
-    submitBtn.disabled = !canSubmit();
+    submitBtn.disabled = false;
   }
 }
 
@@ -562,7 +593,7 @@ async function reverseGeocode(lat, lng) {
     renderMap(lat, lng);
     
     mapHint.textContent = 'Location captured. You can edit if needed.';
-    submitBtn.disabled = !canSubmit();
+    submitBtn.disabled = false;
   } catch (err) {
     console.error('[geocode]', err.message);
     mapHint.textContent = 'Unable to auto-detect city/pincode. Please fill manually.';
@@ -584,7 +615,7 @@ function setupReportAnother() {
     state.location = null;
     state.image = null;
     Array.from(categoryGrid.children).forEach((el) => el.classList.remove('active'));
-    submitBtn.disabled = true;
+    submitBtn.disabled = false;
     mapFrame.innerHTML = '<div class="map-placeholder"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg><span>Map preview will appear here</span></div>';
     mapHint.textContent = 'Location preview will appear once access is granted.';
     locationStatus.textContent = 'Awaiting permission…';
