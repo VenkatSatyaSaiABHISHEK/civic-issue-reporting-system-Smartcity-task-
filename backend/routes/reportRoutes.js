@@ -6,7 +6,9 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   try {
-    const { email, city, pincode, category, description, coordinates } = req.body;
+    const { email, city, pincode, street, category, description, coordinates, image } = req.body;
+
+    console.log('[report] Received payload:', { email, city, pincode, street, category, coordinates });
 
     if (!email || !category || !description) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -18,20 +20,26 @@ router.post('/', async (req, res) => {
       email,
       city: city || '',
       pincode: pincode || '',
+      street: street || '',
       category,
       description,
       coordinates: coordinates || null,
+      image: image || null,
       status: 'Submitted',
       createdAt: new Date(),
     };
 
+    console.log('[report] Saving to Firestore:', referenceId);
     const db = getDb();
     await db.collection('issues').doc(referenceId).set(payload);
+    
+    console.log('[report] Sending confirmation email to:', email);
     await sendConfirmationEmail(email, payload);
 
+    console.log('[report] Issue submitted successfully:', referenceId);
     res.json({ referenceId });
   } catch (err) {
-    console.error('[report] Failed to submit issue', err);
+    console.error('[report] Failed to submit issue:', err.message, err.stack);
     res.status(500).json({ error: 'Unable to submit issue right now.' });
   }
 });

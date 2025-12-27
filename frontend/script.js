@@ -759,18 +759,18 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
     if (data.lat && data.lon) {
       console.log('[pincode] Location found:', data.lat, data.lon);
       
-      if (mapInstance) {
+      if (state.mapInstance) {
         const lat = parseFloat(data.lat);
         const lng = parseFloat(data.lon);
         
-        mapInstance.setView([lat, lng], 13);
+        state.mapInstance.setView([lat, lng], 13);
         
         if (state.mapMarker) {
           state.mapMarker.remove();
         }
         
         state.mapMarker = L.marker([lat, lng])
-          .addTo(mapInstance)
+          .addTo(state.mapInstance)
           .bindPopup(`<b>${data.city}</b><br>Pincode: ${pincode}`);
         
         state.location = { lat, lng };
