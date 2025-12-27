@@ -675,10 +675,34 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
       cityInput.value = data.city;
     }
 
-    // Auto-fill street options
-    if (data.streets && data.streets.length > 0) {
-      streetOptions = data.streets;
-      console.log('[pincode] Street options:', streetOptions);
+    // Auto-fill area options
+    if (data.areas && data.areas.length > 0) {
+      streetOptions = data.areas;
+      console.log('[pincode] Area options:', streetOptions);
+    }
+
+    // Update map to show the pincode location
+    if (data.lat && data.lon && mapInstance) {
+      const lat = parseFloat(data.lat);
+      const lng = parseFloat(data.lon);
+      
+      // Center map on the location
+      mapInstance.setView([lat, lng], 13);
+      
+      // Remove old marker if exists
+      if (state.mapMarker) {
+        state.mapMarker.remove();
+      }
+      
+      // Add new marker at the pincode location
+      state.mapMarker = L.marker([lat, lng])
+        .addTo(mapInstance)
+        .bindPopup(`<b>Pincode ${pincode}</b><br>${data.city}`);
+      
+      // Update state location
+      state.location = { lat, lng };
+      
+      console.log('[pincode] Map updated to:', lat, lng);
     }
   } catch (err) {
     console.error('[pincode] Error:', err);
