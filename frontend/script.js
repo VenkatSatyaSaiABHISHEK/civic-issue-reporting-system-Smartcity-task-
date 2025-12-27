@@ -206,6 +206,11 @@ function onMapClick(e) {
   state.mapMarker.bindPopup(`<strong>Selected Location</strong><br>${lat.toFixed(4)}, ${lng.toFixed(4)}`).openPopup();
   
   locationStatus.textContent = `Selected (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+  
+  // Update preview map on Step 2
+  renderMap(lat, lng);
+  mapHint.textContent = `📍 Location selected`;
+  
   reverseGeocode(lat, lng);
   submitBtn.disabled = !canSubmit();
 }
@@ -553,6 +558,9 @@ async function reverseGeocode(lat, lng) {
       });
     }
     
+    // Update preview map on Step 2
+    renderMap(lat, lng);
+    
     mapHint.textContent = 'Location captured. You can edit if needed.';
     submitBtn.disabled = !canSubmit();
   } catch (err) {
@@ -766,6 +774,11 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
           .bindPopup(`<b>${data.city}</b><br>Pincode: ${pincode}`);
         
         state.location = { lat, lng };
+        
+        // Update preview map on Step 2
+        renderMap(lat, lng);
+        mapHint.textContent = `📍 Location: ${data.city}`;
+        
         console.log('[pincode] Map updated');
       } else {
         console.log('[pincode] Map not initialized yet');
