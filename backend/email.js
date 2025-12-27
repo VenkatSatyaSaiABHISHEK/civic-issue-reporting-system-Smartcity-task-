@@ -1,39 +1,36 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
-const sendgridApiKey = process.env.SENDGRID_API_KEY;
-const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@civicissue.com';
+const smtpUser = process.env.GMAIL_USER;
+const smtpPass = process.env.GMAIL_APP_PASSWORD;
 
-if (!sendgridApiKey) {
-  console.warn('[email] Missing SendGrid API key. Emails will fail until configured.');
-} else {
-  sgMail.setApiKey(sendgridApiKey);
-  console.log('[email] SendGrid configured');
+if (!smtpUser || !smtpPass) {
+  console.warn('[email] Missing Gmail SMTP credentials. Emails will fail until configured.');
 }
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: smtpUser,
+    pass: smtpPass,
+  },
+});
 
 export async function sendConfirmationEmail(to, payload) {
   const { referenceId, category, city, pincode, street, coordinates } = payload;
-  
-  if (!sendgridApiKey) {
-    console.warn('[email] SendGrid not configured, skipping email');
-    return;
-  }
-
-  const msg = {
+  const mailOptions = {
+    from: `Citizen Issue Reporting <${smtpUser}>`,
     to,
-    from: fromEmail,
     subject: 'Your issue has been successfully recorded',
     text: buildPlainText({ referenceId, category, city, pincode, street, coordinates }),
     html: buildHtml({ referenceId, category, city, pincode, street, coordinates }),
   };
 
   try {
-    await sgMail.send(msg);
+    await transporter.sendMail(mailOptions);
     console.log('[email] Confirmation email sent successfully to:', to);
   } catch (err) {
-    // Log email error but don't fail the form submission
     console.warn('[email] Failed to send confirmation email:', err.message);
     console.warn('[email] Note: Issue has been saved to Firestore regardless of email failure');
-    // Don't throw - let the form submission complete successfully
   }
 }
 
