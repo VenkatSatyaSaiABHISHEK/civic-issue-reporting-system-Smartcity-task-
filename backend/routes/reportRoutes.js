@@ -39,8 +39,21 @@ router.post('/', async (req, res) => {
     console.log('[report] Issue submitted successfully:', referenceId);
     res.json({ referenceId });
   } catch (err) {
-    console.error('[report] Failed to submit issue:', err.message, err.stack);
-    res.status(500).json({ error: 'Unable to submit issue right now.' });
+    const errorMsg = err.message || 'Unknown error';
+    const errorCode = err.code || 'UNKNOWN';
+    console.error('[report] Error Code:', errorCode);
+    console.error('[report] Error Message:', errorMsg);
+    console.error('[report] Full Error:', err);
+    
+    // Return more specific error messages
+    let userMessage = 'Unable to submit issue right now.';
+    if (errorMsg.includes('PERMISSION_DENIED') || errorMsg.includes('permission')) {
+      userMessage = 'Firebase permission error. Check credentials on server.';
+    } else if (errorMsg.includes('UNKNOWN')) {
+      userMessage = 'Firebase connection issue. Please try again.';
+    }
+    
+    res.status(500).json({ error: userMessage });
   }
 });
 

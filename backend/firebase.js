@@ -3,7 +3,15 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+// Handle both escaped and unescaped newlines
+if (privateKey) {
+  // Replace literal \n with actual newlines
+  privateKey = privateKey.replace(/\\n/g, '\n');
+  // Remove surrounding quotes if present
+  privateKey = privateKey.replace(/^"(.+)"$/, '$1');
+}
 
 console.log('[firebase] projectId:', projectId ? '✓' : '✗');
 console.log('[firebase] clientEmail:', clientEmail ? '✓' : '✗');
@@ -31,10 +39,15 @@ if (projectId && clientEmail && privateKey) {
     console.log('[firebase] ✓ Connected to Firestore');
   } catch (err) {
     console.error('[firebase] Failed to initialize:', err.message);
+    console.error('[firebase] Error code:', err.code);
     console.error('[firebase] Stack:', err.stack);
+    throw err;
   }
 } else {
   console.warn('[firebase] Missing Firebase admin environment variables; Firestore disabled.');
+  console.warn('[firebase] projectId:', projectId ? 'present' : 'MISSING');
+  console.warn('[firebase] clientEmail:', clientEmail ? 'present' : 'MISSING');
+  console.warn('[firebase] privateKey:', privateKey ? `present (${privateKey.length} chars)` : 'MISSING');
 }
 
 export function getDb() {
