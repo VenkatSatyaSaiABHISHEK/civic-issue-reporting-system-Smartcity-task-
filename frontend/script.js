@@ -649,14 +649,37 @@ document.addEventListener('click', (e) => {
 // Auto-fill city and street when pincode is entered
 pincodeInput?.addEventListener?.('blur', async (e) => {
   const pincode = e.target.value.trim();
+  const messageEl = document.getElementById('pincodeMessage');
   
-  if (!pincode || pincode.length < 5) {
-    console.log('[pincode] Invalid pincode:', pincode);
+  // Clear previous message
+  messageEl.className = 'form-message';
+  messageEl.textContent = '';
+  
+  if (!pincode) {
+    return; // Empty is ok, just skip
+  }
+  
+  // Validate pincode format
+  if (pincode.length < 5 || pincode.length > 6) {
+    messageEl.className = 'form-message error';
+    messageEl.textContent = '⚠️ Pincode must be 5-6 digits';
+    console.log('[pincode] Invalid pincode length:', pincode);
+    return;
+  }
+
+  if (!/^\d+$/.test(pincode)) {
+    messageEl.className = 'form-message error';
+    messageEl.textContent = '⚠️ Pincode must contain only numbers';
+    console.log('[pincode] Non-numeric pincode:', pincode);
     return;
   }
 
   try {
+    // Show loading message
+    messageEl.className = 'form-message loading';
+    messageEl.textContent = 'Searching for location...';
     console.log('[pincode] Searching for:', pincode);
+    
     const response = await fetch(`${API_BASE}/api/geocode/search-pincode`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -668,11 +691,21 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
     if (!response.ok) {
       const error = await response.text();
       console.log('[pincode] Error response:', error);
+      messageEl.className = 'form-message error';
+      messageEl.textContent = '❌ Pincode not found. Please check and try again';
       return;
     }
 
     const data = await response.json();
     console.log('[pincode] Full Result:', JSON.stringify(data, null, 2));
+
+    // Check if valid location data
+    if (!data.city || !data.lat || !data.lon) {
+      messageEl.className = 'form-message error';
+      messageEl.textContent = '❌ Invalid pincode for this location';
+      console.log('[pincode] Invalid data returned:', data);
+      return;
+    }
 
     // Auto-fill city
     if (data.city) {
@@ -701,6 +734,11 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
         streetDropdown.style.display = 'block';
       }
     }
+
+    // Show success message
+    messageEl.className = 'form-message success';
+    messageEl.textContent = `✓ Location found: ${data.city}`;
+    console.log('[pincode] Success:', data.city);
 
     // Update map if it exists
     if (data.lat && data.lon) {
