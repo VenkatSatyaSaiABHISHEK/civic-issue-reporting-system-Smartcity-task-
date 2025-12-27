@@ -25,7 +25,15 @@ export async function sendConfirmationEmail(to, payload) {
     html: buildHtml({ referenceId, category, city, pincode, street, coordinates }),
   };
 
-  return transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('[email] Confirmation email sent successfully to:', to);
+  } catch (err) {
+    // Log email error but don't fail the form submission
+    console.warn('[email] Failed to send confirmation email:', err.message);
+    console.warn('[email] Note: Issue has been saved to Firestore regardless of email failure');
+    // Don't throw - let the form submission complete successfully
+  }
 }
 
 function buildPlainText({ referenceId, category, city, pincode, street, coordinates }) {
