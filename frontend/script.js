@@ -651,7 +651,8 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
   const pincode = e.target.value.trim();
   
   if (!pincode || pincode.length < 5) {
-    return; // Invalid pincode
+    console.log('[pincode] Invalid pincode:', pincode);
+    return;
   }
 
   try {
@@ -662,17 +663,21 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
       body: JSON.stringify({ pincode }),
     });
 
+    console.log('[pincode] Response status:', response.status);
+    
     if (!response.ok) {
-      console.log('[pincode] Not found or error');
+      const error = await response.text();
+      console.log('[pincode] Error response:', error);
       return;
     }
 
     const data = await response.json();
-    console.log('[pincode] Result:', data);
+    console.log('[pincode] Full Result:', JSON.stringify(data, null, 2));
 
-    // Auto-fill city if empty
-    if (!cityInput.value && data.city) {
+    // Auto-fill city
+    if (data.city) {
       cityInput.value = data.city;
+      console.log('[pincode] City filled:', data.city);
     }
 
     // Auto-fill area options
@@ -681,31 +686,32 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
       console.log('[pincode] Area options:', streetOptions);
     }
 
-    // Update map to show the pincode location
-    if (data.lat && data.lon && mapInstance) {
-      const lat = parseFloat(data.lat);
-      const lng = parseFloat(data.lon);
+    // Update map if it exists
+    if (data.lat && data.lon) {
+      console.log('[pincode] Location found:', data.lat, data.lon);
       
-      // Center map on the location
-      mapInstance.setView([lat, lng], 13);
-      
-      // Remove old marker if exists
-      if (state.mapMarker) {
-        state.mapMarker.remove();
+      if (mapInstance) {
+        const lat = parseFloat(data.lat);
+        const lng = parseFloat(data.lon);
+        
+        mapInstance.setView([lat, lng], 13);
+        
+        if (state.mapMarker) {
+          state.mapMarker.remove();
+        }
+        
+        state.mapMarker = L.marker([lat, lng])
+          .addTo(mapInstance)
+          .bindPopup(`<b>${data.city}</b><br>Pincode: ${pincode}`);
+        
+        state.location = { lat, lng };
+        console.log('[pincode] Map updated');
+      } else {
+        console.log('[pincode] Map not initialized yet');
       }
-      
-      // Add new marker at the pincode location
-      state.mapMarker = L.marker([lat, lng])
-        .addTo(mapInstance)
-        .bindPopup(`<b>Pincode ${pincode}</b><br>${data.city}`);
-      
-      // Update state location
-      state.location = { lat, lng };
-      
-      console.log('[pincode] Map updated to:', lat, lng);
     }
   } catch (err) {
-    console.error('[pincode] Error:', err);
+    console.error('[pincode] Fetch error:', err);
   }
 });
 
