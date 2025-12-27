@@ -33,8 +33,11 @@ router.post('/', async (req, res) => {
     const db = getDb();
     await db.collection('issues').doc(referenceId).set(payload);
     
-    console.log('[report] Sending confirmation email to:', email);
-    await sendConfirmationEmail(email, payload);
+    console.log('[report] Queuing confirmation email to:', email);
+    // Send email in background (don't wait for it)
+    sendConfirmationEmail(email, payload).catch(err => {
+      console.error('[report] Background email error:', err.message);
+    });
 
     console.log('[report] Issue submitted successfully:', referenceId);
     res.json({ referenceId });
