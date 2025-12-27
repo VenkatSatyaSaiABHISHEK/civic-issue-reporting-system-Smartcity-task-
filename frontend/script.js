@@ -718,21 +718,28 @@ pincodeInput?.addEventListener?.('blur', async (e) => {
       streetOptions = data.areas;
       console.log('[pincode] Area options available:', data.areas);
       
-      // Populate dropdown
-      const options = data.areas
-        .map(area => `<li data-value="${area}">${area}</li>`)
+      // Populate dropdown with options
+      streetDropdown.innerHTML = data.areas
+        .map(area => `<li data-value="${area}" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #eee;">${area}</li>`)
         .join('');
-      if (streetDropdown && options) {
-        streetDropdown.innerHTML = options;
-        streetDropdown.style.display = 'block';
-        console.log('[pincode] Dropdown populated with', data.areas.length, 'options');
-      }
+      
+      // Add click handlers to dropdown items
+      streetDropdown.querySelectorAll('li').forEach(item => {
+        item.addEventListener('click', () => {
+          streetInput.value = item.getAttribute('data-value');
+          streetDropdown.style.display = 'none';
+        });
+      });
+      
+      streetDropdown.style.display = 'block';
+      console.log('[pincode] Dropdown populated with', data.areas.length, 'options');
     } else {
-      console.warn('[pincode] No areas returned from API:', data.areas);
-      if (streetDropdown) {
-        streetDropdown.innerHTML = '<li style="color: #999;">No areas found for this location</li>';
-        streetDropdown.style.display = 'block';
-      }
+      console.warn('[pincode] No areas returned from API, allowing free text input:', data.areas);
+      // Allow users to type their own area
+      streetOptions = [];
+      streetDropdown.innerHTML = '<li style="padding: 10px 12px; color: #999; text-align: center; font-size: 0.9em;">Type to enter area manually (optional)</li>';
+      streetDropdown.style.display = 'block';
+      streetInput.placeholder = 'Type your area/locality...';
     }
 
     // Show success message
